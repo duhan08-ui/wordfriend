@@ -17,6 +17,8 @@ import streamlit as st
 
 st.set_page_config(page_title="단어친구", page_icon="🦓", layout="centered")
 
+PRAISES = ["Good job!", "Excellent!", "Great!", "Perfect!", "Wonderful!"]
+
 VOICES = [
     "en-US-JennyNeural",   # 여성, 또렷하고 자연스러움 (기본)
     "en-US-AnaNeural",     # 어린이 목소리
@@ -177,6 +179,9 @@ def page_quiz(words):
         ok = q["picked"] == item["answer"]
         if ok:
             st.success(f"⭕ 정답! **{item['answer']}**")
+            p = audio_path(random.choice(PRAISES))
+            if p:
+                st.audio(p, autoplay=True)
         else:
             st.error(f"❌ 정답은 **{item['answer']}** 이에요")
         if not ok:
@@ -273,14 +278,15 @@ def page_admin(words):
             buf.write(",".join([w["en"], w["ko"], w["emoji"], w["group"]]) + "\n")
         files = {"words.csv": buf.getvalue().encode("utf-8")}
 
-        todo = [w for w in new_words if regen or not audio_path(w["en"])]
+        texts = [w["en"] for w in new_words] + PRAISES
+        todo = [t for t in texts if regen or not audio_path(t)]
         prog = st.progress(0.0, text="원어민 발음 생성 중…")
-        for i, w in enumerate(todo):
+        for i, t in enumerate(todo):
             try:
-                files[f"audio/{slug(w['en'])}.mp3"] = gen_mp3(w["en"], voice)
+                files[f"audio/{slug(t)}.mp3"] = gen_mp3(t, voice)
             except Exception as e:
-                st.warning(f"{w['en']} 발음 생성 실패: {e}")
-            prog.progress((i + 1) / max(len(todo), 1), text=f"발음 생성: {w['en']}")
+                st.warning(f"{t} 발음 생성 실패: {e}")
+            prog.progress((i + 1) / max(len(todo), 1), text=f"발음 생성: {t}")
         prog.empty()
 
         try:
