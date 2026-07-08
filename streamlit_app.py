@@ -175,8 +175,10 @@ def page_quiz(words):
                 st.rerun()
     else:
         ok = q["picked"] == item["answer"]
-        st.success(f"⭕ 정답! **{item['answer']}**") if ok else st.error(
-            f"❌ 정답은 **{item['answer']}** 이에요")
+        if ok:
+            st.success(f"⭕ 정답! **{item['answer']}**")
+        else:
+            st.error(f"❌ 정답은 **{item['answer']}** 이에요")
         if not ok:
             play(w["en"], autoplay=True)
         if st.button("다음 문제 ▶", type="primary", use_container_width=True):
