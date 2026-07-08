@@ -303,6 +303,39 @@ def page_admin(words):
             f"저장 완료! 단어 {len(new_words)}개 · 발음 {len(todo)}개 생성. "
             "웹은 1~2분 안에 자동 재시작되며, 앱은 다음 실행(또는 단어 관리의 서버 동기화) 때 반영됩니다.")
 
+    st.divider()
+    st.markdown("#### 📲 앱 업데이트 배포")
+    cur_v = "없음"
+    if os.path.exists("app/version.json"):
+        try:
+            import json as _json
+            v = _json.load(open("app/version.json", encoding="utf-8"))
+            cur_v = f"v{v.get('versionName')} (code {v.get('versionCode')})"
+        except Exception:
+            pass
+    st.caption(f"서버에 올라온 버전: {cur_v} · 올리면 앱의 관리자 화면 > 🔄 앱 업데이트에서 받을 수 있어요")
+
+    c1, c2 = st.columns(2)
+    vname = c1.text_input("versionName (예: 2.1)")
+    vcode = c2.number_input("versionCode (지금 버전보다 큰 정수)", min_value=1, step=1, value=7)
+    apk = st.file_uploader("서명된 APK 파일", type=["apk"])
+
+    if st.button("📲 APK 업로드", use_container_width=True):
+        if not apk or not vname.strip():
+            st.error("APK 파일과 versionName 을 입력해 주세요")
+        else:
+            import json as _json
+            data = apk.getvalue()
+            meta = _json.dumps({"versionCode": int(vcode), "versionName": vname.strip(),
+                                "size": len(data)}).encode("utf-8")
+            try:
+                with st.spinner(f"업로드 중… ({len(data)//1024} KB)"):
+                    commit_files({"app/wordfriend.apk": data, "app/version.json": meta},
+                                 f"app: v{vname.strip()} (code {int(vcode)})")
+                st.success(f"업로드 완료! 앱에서 [관리자 → 🔄 앱 업데이트] 로 설치할 수 있어요")
+            except Exception as e:
+                st.error(f"GitHub 저장 실패: {e}")
+
 
 # ---------- 메인 ----------
 
