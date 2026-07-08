@@ -1,0 +1,3 @@
+streamlit>=1.36
+edge-tts>=6.1
+requests
