@@ -19,7 +19,7 @@ st.set_page_config(page_title="단어친구", page_icon="🦓", layout="centered
 
 PRAISES = ["Good job!", "Excellent!", "Great!", "Perfect!", "Wonderful!"]
 
-SUPA_URL = "https://mztadmbkbrsqmsqojcp.supabase.co"
+SUPA_URL = "https://mztadmbkbrsvqmsqojcp.supabase.co"
 SUPA_KEY = "sb_publishable_Za91TlCA4yg1crtS2-VHHg_r6BOi0an"
 
 VOICES = [
