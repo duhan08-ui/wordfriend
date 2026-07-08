@@ -260,6 +260,18 @@ def check_admin() -> bool:
     return False
 
 
+def kst(iso: str) -> str:
+    """서버 UTC 시각을 한국 시간 문자열로"""
+    try:
+        from datetime import datetime, timedelta, timezone
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return iso[:16].replace("T", " ")
+
+
 def page_report(words):
     st.subheader("📊 학습 리포트")
     if not check_admin():
@@ -284,7 +296,7 @@ def page_report(words):
     labels = {f"{x.get('child_name') or '기기'} ({x['device_id'][:6]}…)": x for x in rows}
     pick = st.selectbox("기기", list(labels.keys()))
     row = labels[pick]
-    st.caption(f"마지막 기록: {row.get('updated_at', '')[:16].replace('T', ' ')} (UTC)")
+    st.caption(f"마지막 기록: {kst(row.get('updated_at', ''))} (한국 시간)")
 
     stats = row.get("stats") or {}
     days = stats.get("days") or {}
