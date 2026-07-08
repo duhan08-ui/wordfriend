@@ -302,12 +302,62 @@ def page_report(words):
     days = stats.get("days") or {}
     keys = sorted(days.keys(), reverse=True)[:14]
 
-    today = keys[0] if keys else None
+    # ---- 주간 요약: 최근 7일 vs 그 전 7일 ----
+    from datetime import date, timedelta
+    def day_val(d0, field):
+        return (days.get(d0.isoformat()) or {}).get(field, 0)
+    t = date.today()
+    wk = [t - timedelta(days=i) for i in range(7)]
+    prev = [t - timedelta(days=i) for i in range(7, 14)]
+    def summary(ds):
+        play = sum(day_val(d, "playSec") for d in ds)
+        r = sum(day_val(d, "right") for d in ds)
+        w = sum(day_val(d, "wrong") for d in ds)
+        rate = round(r / (r + w) * 100) if (r + w) else 0
+        return play // 60, rate, r + w
+    p1, rate1, n1 = summary(wk)
+    p0, rate0, n0 = summary(prev)
+
     c1, c2, c3 = st.columns(3)
-    total_play = sum(d.get("playSec", 0) for d in days.values())
-    c1.metric("총 학습 시간", f"{total_play // 60}분")
-    c2.metric("총 ⭕", sum(d.get("right", 0) for d in days.values()))
-    c3.metric("총 ❌", sum(d.get("wrong", 0) for d in days.values()))
+    c1.metric("최근 7일 학습", f"{p1}분", delta=f"{p1 - p0:+d}분")
+    c2.metric("최근 7일 정답률", f"{rate1}%" if n1 else "-",
+              delta=(f"{rate1 - rate0:+d}%p" if n1 and n0 else None))
+    c3.metric("최근 7일 문제 수", n1, delta=n1 - n0)
+
+    # ---- 그래프 ----
+    import pandas as pd
+    ordered = sorted(days.keys())[-14:]
+    if ordered:
+        df = pd.DataFrame({
+            "날짜": [k[5:] for k in ordered],
+            "학습(분)": [round(days[k].get("playSec", 0) / 60, 1) for k in ordered],
+        }).set_index("날짜")
+        st.markdown("##### ⏱ 학습 시간 (최근 14일)")
+        st.bar_chart(df, height=220)
+
+        rated = [k for k in ordered
+                 if days[k].get("right", 0) + days[k].get("wrong", 0) > 0]
+        if rated:
+            df2 = pd.DataFrame({
+                "날짜": [k[5:] for k in rated],
+                "정답률(%)": [
+                    round(days[k]["right"] / (days[k]["right"] + days[k].get("wrong", 0)) * 100)
+                    if (days[k].get("right", 0) + days[k].get("wrong", 0)) else 0
+                    for k in rated
+                ],
+            }).set_index("날짜")
+            st.markdown("##### 🎯 정답률 추이")
+            st.line_chart(df2, height=220)
+
+    # ---- 라이트너 상자 분포 ----
+    wstats_all = stats.get("words") or {}
+    tried = [s for s in wstats_all.values() if s.get("right", 0) + s.get("wrong", 0) > 0]
+    if tried:
+        dist = {f"상자{b}": sum(1 for s in tried if s.get("box", 0) == b) for b in range(5)}
+        weak_n = dist["상자0"] + dist["상자1"]
+        st.markdown(f"##### 📦 단어 상태 (약한 단어 {weak_n}개)")
+        st.bar_chart(pd.DataFrame([dist]).T.rename(columns={0: "단어 수"}), height=200)
+        st.caption("상자0~1 = 자주 나오게 되는 약한 단어 · 상자4 = 완전히 익힌 단어")
 
     st.markdown("##### 📅 일자별 기록")
     st.dataframe(
@@ -318,6 +368,8 @@ def page_report(words):
                 "학습(분)": round(days[k].get("playSec", 0) / 60, 1),
                 "⭕": days[k].get("right", 0),
                 "❌": days[k].get("wrong", 0),
+                "🎤": days[k].get("speak", 0),
+                "⭐": days[k].get("stars", 0),
             }
             for k in keys
         ],
