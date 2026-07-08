@@ -456,19 +456,25 @@ def page_admin(words):
 
     st.divider()
     st.markdown("#### 📲 앱 업데이트 배포")
-    cur_v = "없음"
+    cur_v, cur_code = "없음", 0
     if os.path.exists("app/version.json"):
         try:
             import json as _json
             v = _json.load(open("app/version.json", encoding="utf-8"))
-            cur_v = f"v{v.get('versionName')} (code {v.get('versionCode')})"
+            cur_code = int(v.get("versionCode") or 0)
+            cur_v = f"v{v.get('versionName')} (code {cur_code})"
         except Exception:
             pass
     st.caption(f"서버에 올라온 버전: {cur_v} · 올리면 앱의 관리자 화면 > 🔄 앱 업데이트에서 받을 수 있어요")
 
     c1, c2 = st.columns(2)
-    vname = c1.text_input("versionName (예: 2.1)")
-    vcode = c2.number_input("versionCode (지금 버전보다 큰 정수)", min_value=1, step=1, value=7)
+    vname = c1.text_input("versionName (예: 2.2)")
+    vcode = c2.number_input(
+        "versionCode — build.gradle의 versionCode와 같게, 이전보다 크게",
+        min_value=1, step=1, value=max(cur_code + 1, 1),
+    )
+    if cur_code and vcode <= cur_code:
+        st.warning(f"지금 서버 코드({cur_code})보다 커야 폰에서 업데이트 버튼이 켜져요")
     apk = st.file_uploader("서명된 APK 파일", type=["apk"])
 
     if st.button("📲 APK 업로드", use_container_width=True):
