@@ -77,9 +77,13 @@ def big_card(word):
 
 def page_learn(words):
     st.subheader("📖 단어 배우기")
-    groups = ["전체"] + sorted({w["group"] for w in words if w["group"]})
+    seen = []
+    for w in words:
+        if w["group"] and w["group"] not in seen:
+            seen.append(w["group"])
+    groups = ["🌈 전체"] + seen
     g = st.selectbox("범위", groups)
-    cur = [w for w in words if g == "전체" or w["group"] == g]
+    cur = [w for w in words if g == "🌈 전체" or w["group"] == g]
     if not cur:
         st.info("단어가 없어요.")
         return
@@ -253,7 +257,7 @@ def page_admin(words):
             st.error("비밀번호가 달라요")
         return
 
-    st.markdown("한 줄에 한 단어씩 · 형식: `영어,뜻,이모지,그룹` (이모지/그룹은 생략 가능)")
+    st.markdown("한 줄에 한 단어씩 · 형식: `영어,뜻,이모지,그룹` — 그룹은 아이 화면에 그대로 보이니 읽기 쉬운 이름으로 (예: 파닉스 1단계, 동물 단어)")
     cur_text = "\n".join(
         ",".join([w["en"], w["ko"], w["emoji"], w["group"]]).rstrip(",") for w in words)
     text = st.text_area("단어 목록 (이 내용 전체가 그대로 저장됩니다)", cur_text, height=320)
