@@ -412,6 +412,21 @@ def page_admin(words):
     cur_text = "\n".join(
         ",".join([w["en"], w["ko"], w["emoji"], w["group"]]).rstrip(",") for w in words)
     text = st.text_area("단어 목록 (이 내용 전체가 그대로 저장됩니다)", cur_text, height=320)
+
+    # 현재 입력칸 기준 단어 수 (저장 전 검증용)
+    parsed = []
+    for _line in text.splitlines():
+        _p = [x.strip() for x in re.split(r"[,\t]", _line.strip(), maxsplit=3)]
+        if len(_p) >= 2 and _p[0] and _p[1] and _p[0] != "en":
+            parsed.append(_p + ["", ""])
+    if parsed:
+        from collections import Counter
+        _g = Counter((p[3] or "그룹없음") for p in parsed)
+        _detail = " · ".join(f"{k} {v}" for k, v in _g.items())
+        st.caption(f"📚 지금 목록: **{len(parsed)}개** — {_detail}")
+    else:
+        st.caption("📚 지금 목록: 0개")
+
     voice = st.selectbox("발음 목소리", VOICES)
     regen = st.checkbox("모든 발음을 이 목소리로 다시 생성 (목소리를 바꿨을 때 체크)")
 
