@@ -19,6 +19,9 @@ st.set_page_config(page_title="단어친구", page_icon="🦓", layout="centered
 
 PRAISES = ["Good job!", "Excellent!", "Great!", "Perfect!", "Wonderful!"]
 
+SUPA_URL = "https://mztadmbkbrsqmsqojcp.supabase.co"
+SUPA_KEY = "sb_publishable_Za91TlCA4yg1crtS2-VHHg_r6BOi0an"
+
 VOICES = [
     "en-US-JennyNeural",   # 여성, 또렷하고 자연스러움 (기본)
     "en-US-AnaNeural",     # 어린이 목소리
@@ -245,16 +248,100 @@ def gen_mp3(text: str, voice: str) -> bytes:
         os.unlink(path)
 
 
+def check_admin() -> bool:
+    if st.session_state.get("auth"):
+        return True
+    pw = st.text_input("비밀번호", type="password", key="admin_pw")
+    if st.button("확인", key="admin_ok"):
+        if pw == st.secrets.get("ADMIN_PASSWORD", ""):
+            st.session_state.auth = True
+            st.rerun()
+        st.error("비밀번호가 달라요")
+    return False
+
+
+def page_report(words):
+    st.subheader("📊 학습 리포트")
+    if not check_admin():
+        return
+
+    try:
+        r = requests.get(
+            f"{SUPA_URL}/rest/v1/wf_stats?select=*&order=updated_at.desc",
+            headers={"apikey": SUPA_KEY, "Authorization": f"Bearer {SUPA_KEY}"},
+            timeout=10,
+        )
+        r.raise_for_status()
+        rows = r.json()
+    except Exception as e:
+        st.error(f"서버에서 기록을 불러오지 못했어요: {e}")
+        return
+
+    if not rows:
+        st.info("아직 올라온 기록이 없어요. 아이 폰에서 학습하면 자동으로 올라옵니다.")
+        return
+
+    labels = {f"{x.get('child_name') or '기기'} ({x['device_id'][:6]}…)": x for x in rows}
+    pick = st.selectbox("기기", list(labels.keys()))
+    row = labels[pick]
+    st.caption(f"마지막 기록: {row.get('updated_at', '')[:16].replace('T', ' ')} (UTC)")
+
+    stats = row.get("stats") or {}
+    days = stats.get("days") or {}
+    keys = sorted(days.keys(), reverse=True)[:14]
+
+    today = keys[0] if keys else None
+    c1, c2, c3 = st.columns(3)
+    total_play = sum(d.get("playSec", 0) for d in days.values())
+    c1.metric("총 학습 시간", f"{total_play // 60}분")
+    c2.metric("총 ⭕", sum(d.get("right", 0) for d in days.values()))
+    c3.metric("총 ❌", sum(d.get("wrong", 0) for d in days.values()))
+
+    st.markdown("##### 📅 일자별 기록")
+    st.dataframe(
+        [
+            {
+                "날짜": k,
+                "접속(분)": round(days[k].get("appSec", 0) / 60, 1),
+                "학습(분)": round(days[k].get("playSec", 0) / 60, 1),
+                "⭕": days[k].get("right", 0),
+                "❌": days[k].get("wrong", 0),
+            }
+            for k in keys
+        ],
+        use_container_width=True, hide_index=True,
+    )
+
+    wmap = {w["en"]: w for w in words}
+    wstats = stats.get("words") or {}
+    weak = sorted(
+        ((en, s) for en, s in wstats.items() if s.get("wrong", 0) > 0),
+        key=lambda x: -x[1].get("wrong", 0),
+    )[:15]
+    st.markdown("##### ❗ 많이 틀린 단어")
+    if not weak:
+        st.caption("틀린 단어가 아직 없어요 👍")
+    else:
+        st.dataframe(
+            [
+                {
+                    "단어": en,
+                    "뜻": wmap.get(en, {}).get("ko", ""),
+                    "❌": s.get("wrong", 0),
+                    "⭕": s.get("right", 0),
+                    "상자(0=약함)": s.get("box", 0),
+                    "최근": s.get("last", ""),
+                }
+                for en, s in weak
+            ],
+            use_container_width=True, hide_index=True,
+        )
+
+
 def page_admin(words):
     st.subheader("⚙️ 단어 관리 (보호자)")
 
-    if not st.session_state.get("auth"):
-        pw = st.text_input("비밀번호", type="password")
-        if st.button("확인"):
-            if pw == st.secrets.get("ADMIN_PASSWORD", ""):
-                st.session_state.auth = True
-                st.rerun()
-            st.error("비밀번호가 달라요")
+    if not check_admin():
         return
 
     st.markdown("한 줄에 한 단어씩 · 형식: `영어,뜻,이모지,그룹` — 그룹은 아이 화면에 그대로 보이니 읽기 쉬운 이름으로 (예: 파닉스 1단계, 동물 단어)")
@@ -341,10 +428,12 @@ def page_admin(words):
 
 words = load_words()
 st.markdown("## 🦓 단어친구")
-tab = st.sidebar.radio("메뉴", ["📖 단어 배우기", "🎯 퀴즈 놀이", "⚙️ 단어 관리"])
+tab = st.sidebar.radio("메뉴", ["📖 단어 배우기", "🎯 퀴즈 놀이", "📊 학습 리포트", "⚙️ 단어 관리"])
 if tab.startswith("📖"):
     page_learn(words)
 elif tab.startswith("🎯"):
     page_quiz(words)
+elif tab.startswith("📊"):
+    page_report(words)
 else:
     page_admin(words)
