@@ -428,8 +428,20 @@ def page_admin(words):
     else:
         st.caption("📚 지금 목록: 0개")
 
+    # 서버 발음 파일 상태 — 저장 후 페이지가 새로고침돼도 여기서 항상 확인 가능
+    _targets = [p[0] for p in parsed] + PRAISES
+    _have = sum(1 for t in _targets if audio_path(t))
+    _miss = len(_targets) - _have
+    if _miss == 0 and _targets:
+        st.success(f"🔊 발음 파일: 전부 준비됨 ✅ ({_have}/{len(_targets)})")
+    else:
+        st.info(f"🔊 발음 파일: {_have}/{len(_targets)} · 부족 {_miss}개 — 저장을 누르면 부족분만 자동 생성돼요")
+
     voice = st.selectbox("발음 목소리", VOICES)
     regen = st.checkbox("모든 발음을 이 목소리로 다시 생성 (목소리를 바꿨을 때 체크)")
+    if regen:
+        st.warning(f"⚠ 전체 {len(_targets)}개를 처음부터 다시 만듭니다 (10분 이상 소요). "
+                   "새 단어만 추가하는 경우라면 체크를 해제하세요!")
 
     if st.button("💾 저장 → 웹/앱에 적용", type="primary", use_container_width=True):
         new_words = []
