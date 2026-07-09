@@ -395,7 +395,7 @@ def page_report(words):
                 3: "🟢 거의 외웠어요"}.get(int(b or 0), "🟢 다 외웠어요")
 
     st.markdown("##### ❗ 많이 틀린 단어 TOP")
-    st.caption("맞히면 🟢 쪽으로 올라가고, 틀리면 🔴 처음부터. 🔴 단어는 퀴즈에 자동으로 자주 나와요.")
+    st.caption("위에서부터 지금 도와주면 좋은 순서예요. 🔴 = 아직 어려운 단어, 🟢 = 다 외운 단어.")
     if not weak:
         st.caption("틀린 단어가 아직 없어요 👍")
     else:
