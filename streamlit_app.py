@@ -527,9 +527,13 @@ def page_admin(words):
     _star = cc1.number_input("별 지급 최소 정답 수", 1, 15, int(_cfg.get("starMinCorrect", 6)))
     _qn = cc2.number_input("퀴즈/철자 문제 수", 5, 20, int(_cfg.get("quizQuestions", 10)))
     _weak = cc3.number_input("약한 단어 우선 수", 0, 15, int(_cfg.get("weakFirst", 7)))
-    cc4, cc5 = st.columns(2)
+    cc4, cc5, cc6 = st.columns(3)
     _retry = cc4.number_input("따라 말하기 재시도", 1, 9, int(_cfg.get("speakRetries", 3)))
     _slow = cc5.number_input("느린 발음 속도", 0.4, 1.0, float(_cfg.get("slowSpeed", 0.65)), step=0.05)
+    _len = cc6.selectbox("말하기 판정 관대함", [0, 1, 2, 3],
+        index=int(_cfg.get("speakLeniency", 2)),
+        format_func=lambda v: {0:"0 엄격", 1:"1 보통", 2:"2 관대(기본)", 3:"3 매우 관대"}[v])
+    st.caption("말하기 인식이 자꾸 실패하면 관대함을 3으로 올려보세요. 아무 소리나 통과되면 1로 낮추세요.")
     st.caption("저장하면 아이 폰이 다음에 앱을 열 때 조용히 자동 적용돼요 (아이 화면에 안내 없음). "
                "적용 확인은 각 폰의 관리자 대시보드 상단에서.")
     if st.button("⚙️ 설정 저장 → 앱에 적용", use_container_width=True):
@@ -538,6 +542,7 @@ def page_admin(words):
             "quizQuestions": int(_qn),
             "weakFirst": int(_weak),
             "speakRetries": int(_retry),
+            "speakLeniency": int(_len),
             "slowSpeed": round(float(_slow), 2),
             "ttsSlow": float(_cfg.get("ttsSlow", 0.45)),
             "ttsNormal": float(_cfg.get("ttsNormal", 0.8)),
