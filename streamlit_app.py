@@ -389,7 +389,12 @@ def page_report(words):
         ((en, s) for en, s in wstats.items() if s.get("wrong", 0) > 0),
         key=lambda x: -x[1].get("wrong", 0),
     )[:15]
-    st.markdown("##### ❗ 많이 틀린 단어")
+    def _box_label(b):
+        return {0: "🔴 아직 어려워요", 1: "🔴 조금 어려워요", 2: "🟡 외우는 중",
+                3: "🟢 거의 외웠어요"}.get(int(b or 0), "🟢 다 외웠어요")
+
+    st.markdown("##### ❗ 많이 틀린 단어 TOP")
+    st.caption("맞히면 🟢 쪽으로 올라가고, 틀리면 🔴 처음부터. 🔴 단어는 퀴즈에 자동으로 자주 나와요.")
     if not weak:
         st.caption("틀린 단어가 아직 없어요 👍")
     else:
@@ -398,9 +403,9 @@ def page_report(words):
                 {
                     "단어": en,
                     "뜻": wmap.get(en, {}).get("ko", ""),
-                    "❌": s.get("wrong", 0),
-                    "⭕": s.get("right", 0),
-                    "상자(0=약함)": s.get("box", 0),
+                    "상태": _box_label(s.get("box", 0)),
+                    "틀림": s.get("wrong", 0),
+                    "맞힘": s.get("right", 0),
                     "최근": s.get("last", ""),
                 }
                 for en, s in weak
