@@ -303,10 +303,11 @@ def page_report(words):
     keys = sorted(days.keys(), reverse=True)[:14]
 
     # ---- 주간 요약: 최근 7일 vs 그 전 7일 ----
-    from datetime import date, timedelta
+    from datetime import datetime, timedelta, timezone
     def day_val(d0, field):
         return (days.get(d0.isoformat()) or {}).get(field, 0)
-    t = date.today()
+    # 서버는 UTC로 돌아서 date.today()를 쓰면 한국 새벽(0~9시)에 날짜가 하루 밀림 → KST 기준 오늘
+    t = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
     wk = [t - timedelta(days=i) for i in range(7)]
     prev = [t - timedelta(days=i) for i in range(7, 14)]
     def summary(ds):
