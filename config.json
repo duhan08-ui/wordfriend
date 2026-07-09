@@ -1,1 +1,1 @@
-{"starMinCorrect": 10, "quizQuestions": 20, "weakFirst": 7, "speakRetries": 3, "speakLeniency": 1, "slowSpeed": 0.65, "ttsSlow": 0.45, "ttsNormal": 0.8, "quizAll": 0}
+{"starMinCorrect": 20, "quizQuestions": 20, "quizAll": 0, "weakFirst": 7, "speakRetries": 3, "speakLeniency": 1, "slowSpeed": 0.65, "ttsSlow": 0.45, "ttsNormal": 0.8}
