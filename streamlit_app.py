@@ -299,6 +299,12 @@ def page_report(words):
     st.caption(f"마지막 기록: {kst(row.get('updated_at', ''))} (한국 시간)")
 
     stats = row.get("stats") or {}
+    meta = stats.get("meta") or {}
+    if meta:
+        st.caption(
+            f"📲 이 폰 적용 상태: 앱 v{meta.get('appVer','?')} · 단어 {meta.get('words',0)}개 · "
+            f"발음 {meta.get('audio',0)}개 · 마지막 동기화 {meta.get('lastSync','-')}"
+        )
     days = stats.get("days") or {}
     keys = sorted(days.keys(), reverse=True)[:14]
 
@@ -463,6 +469,9 @@ def page_admin(words):
 
         texts = [w["en"] for w in new_words] + PRAISES
         todo = [t for t in texts if regen or not audio_path(t)]
+        if regen:
+            import time as _time
+            files["audio/_v.txt"] = str(int(_time.time())).encode("utf-8")
         prog = st.progress(0.0, text="원어민 발음 생성 중…")
         for i, t in enumerate(todo):
             try:
