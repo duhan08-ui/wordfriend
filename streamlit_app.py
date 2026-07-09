@@ -303,7 +303,7 @@ def page_report(words):
     if meta:
         st.caption(
             f"📲 이 폰 적용 상태: 앱 v{meta.get('appVer','?')} · 단어 {meta.get('words',0)}개 · "
-            f"발음 {meta.get('audio',0)}개 · 마지막 동기화 {meta.get('lastSync','-')}"
+            f"배움 {meta.get('seen',0)}개 · 발음 {meta.get('audio',0)}개 · 마지막 동기화 {meta.get('lastSync','-')}"
         )
     days = stats.get("days") or {}
     keys = sorted(days.keys(), reverse=True)[:14]
