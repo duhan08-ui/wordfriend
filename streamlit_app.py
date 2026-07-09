@@ -492,6 +492,40 @@ def page_admin(words):
             "웹은 1~2분 안에 자동 재시작되며, 앱은 다음 실행(또는 단어 관리의 서버 동기화) 때 반영됩니다.")
 
     st.divider()
+    st.markdown("#### ⚙️ 앱 원격 설정 — 재빌드 없이 즉시 반영")
+    import json as _cjson
+    _cfg = {}
+    if os.path.exists("config.json"):
+        try:
+            _cfg = _cjson.load(open("config.json", encoding="utf-8"))
+        except Exception:
+            pass
+    cc1, cc2, cc3 = st.columns(3)
+    _star = cc1.number_input("별 지급 최소 정답 수", 1, 15, int(_cfg.get("starMinCorrect", 6)))
+    _qn = cc2.number_input("퀴즈/철자 문제 수", 5, 20, int(_cfg.get("quizQuestions", 10)))
+    _weak = cc3.number_input("약한 단어 우선 수", 0, 15, int(_cfg.get("weakFirst", 7)))
+    cc4, cc5 = st.columns(2)
+    _retry = cc4.number_input("따라 말하기 재시도", 1, 9, int(_cfg.get("speakRetries", 3)))
+    _slow = cc5.number_input("느린 발음 속도", 0.4, 1.0, float(_cfg.get("slowSpeed", 0.65)), step=0.05)
+    st.caption("저장하면 아이 폰이 다음에 앱을 열 때 조용히 자동 적용돼요 (아이 화면에 안내 없음). "
+               "적용 확인은 각 폰의 관리자 대시보드 상단에서.")
+    if st.button("⚙️ 설정 저장 → 앱에 적용", use_container_width=True):
+        body = _cjson.dumps({
+            "starMinCorrect": int(_star),
+            "quizQuestions": int(_qn),
+            "weakFirst": int(_weak),
+            "speakRetries": int(_retry),
+            "slowSpeed": round(float(_slow), 2),
+            "ttsSlow": float(_cfg.get("ttsSlow", 0.45)),
+            "ttsNormal": float(_cfg.get("ttsNormal", 0.8)),
+        }).encode("utf-8")
+        try:
+            commit_files({"config.json": body}, "config: 원격 설정 변경")
+            st.success("설정 저장 완료! 폰은 다음에 앱을 열 때 자동 적용됩니다.")
+        except Exception as e:
+            st.error(f"저장 실패: {e}")
+
+    st.divider()
     st.markdown("#### 📲 앱 업데이트 배포")
     cur_v, cur_code = "없음", 0
     if os.path.exists("app/version.json"):
