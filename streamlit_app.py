@@ -385,9 +385,10 @@ def page_report(words):
 
     wmap = {w["en"]: w for w in words}
     wstats = stats.get("words") or {}
+    # 상태 우선: 🔴(box 낮음) 먼저 → 그 안에서 틀린 횟수 많은 순 (위에서부터 도와줄 순서)
     weak = sorted(
         ((en, s) for en, s in wstats.items() if s.get("wrong", 0) > 0),
-        key=lambda x: -x[1].get("wrong", 0),
+        key=lambda x: (x[1].get("box", 0), -x[1].get("wrong", 0)),
     )[:15]
     def _box_label(b):
         return {0: "🔴 아직 어려워요", 1: "🔴 조금 어려워요", 2: "🟡 외우는 중",
