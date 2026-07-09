@@ -523,10 +523,19 @@ def page_admin(words):
             _cfg = _cjson.load(open("config.json", encoding="utf-8"))
         except Exception:
             pass
+    _all = st.checkbox("🎯 전체 다 풀기 (시험 대비 — 배운 단어를 한 판에 모두 출제)",
+                       value=bool(_cfg.get("quizAll", 0)))
+    if _all:
+        st.info("전체 다 풀기가 켜져 있어요. 한 판에 '배운 단어 전체'가 나옵니다. "
+                "평소 학습으로 돌아가려면 체크를 해제하세요.")
     cc1, cc2, cc3 = st.columns(3)
-    _star = cc1.number_input("별 지급 최소 정답 수", 1, 15, int(_cfg.get("starMinCorrect", 6)))
-    _qn = cc2.number_input("퀴즈/철자 문제 수", 5, 20, int(_cfg.get("quizQuestions", 10)))
-    _weak = cc3.number_input("약한 단어 우선 수", 0, 15, int(_cfg.get("weakFirst", 7)))
+    _star = cc1.number_input("별 지급 최소 정답 수", 1, 500, int(_cfg.get("starMinCorrect", 6)))
+    _qn = cc2.number_input("퀴즈/철자 문제 수", 3, 500, int(_cfg.get("quizQuestions", 10)),
+                           disabled=_all,
+                           help="전체 다 풀기를 켜면 이 값은 무시되고 배운 단어 전체가 나와요")
+    _weak = cc3.number_input("약한 단어 우선 수", 0, 500, int(_cfg.get("weakFirst", 7)))
+    if _star > _qn and not _all:
+        st.warning(f"별 기준({_star})이 문제 수({_qn})보다 크면 별을 받을 수 없어요. 문제 수 이하로 맞춰주세요.")
     cc4, cc5, cc6 = st.columns(3)
     _retry = cc4.number_input("따라 말하기 재시도", 1, 9, int(_cfg.get("speakRetries", 3)))
     _slow = cc5.number_input("느린 발음 속도", 0.4, 1.0, float(_cfg.get("slowSpeed", 0.65)), step=0.05)
@@ -540,6 +549,7 @@ def page_admin(words):
         body = _cjson.dumps({
             "starMinCorrect": int(_star),
             "quizQuestions": int(_qn),
+            "quizAll": 1 if _all else 0,
             "weakFirst": int(_weak),
             "speakRetries": int(_retry),
             "speakLeniency": int(_len),
