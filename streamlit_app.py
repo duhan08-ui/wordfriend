@@ -366,6 +366,23 @@ def page_report(words):
         st.bar_chart(pd.DataFrame([dist]).T.rename(columns={0: "단어 수"}), height=200)
         st.caption("상자0~1 = 자주 나오게 되는 약한 단어 · 상자4 = 완전히 익힌 단어")
 
+    # 세션(시각별) — 시작~종료가 기록된 날만
+    _sess_rows = []
+    for k in sorted(days.keys(), reverse=True)[:7]:
+        for s in (days[k].get("sessions") or []):
+            _sess_rows.append({
+                "날짜": k[5:],
+                "시작": s.get("start", ""),
+                "종료": s.get("end", ""),
+                "학습(분)": round(s.get("playSec", 0) / 60, 1),
+                "⭕": s.get("right", 0),
+                "❌": s.get("wrong", 0),
+                "🎤": s.get("speak", 0),
+            })
+    if _sess_rows:
+        st.markdown("##### ⏰ 학습 시간대 (세션별)")
+        st.dataframe(_sess_rows, use_container_width=True, hide_index=True)
+
     st.markdown("##### 📅 일자별 기록")
     st.dataframe(
         [
