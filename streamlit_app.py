@@ -523,6 +523,18 @@ def page_admin(words):
             _cfg = _cjson.load(open("config.json", encoding="utf-8"))
         except Exception:
             pass
+    _stage = st.checkbox("📘 단원제 학습 (단원을 순서대로: 배우기 → 퀴즈로 마스터 → 다음 단원 해금)",
+                         value=bool(_cfg.get("stageMode", 1)))
+    if _stage:
+        _ratio = st.slider("다음 단원 열리는 기준 (현재 단원 마스터 비율)",
+                           50, 100, int(float(_cfg.get("stageUnlockRatio", 0.7)) * 100), step=5,
+                           format="%d%%")
+        st.caption("예: 70%면 현재 단원 단어의 70%를 '거의/다 외움'으로 만들면 다음 단원이 열려요. "
+                   "단원제를 켜면 배우기 없이 퀴즈만 도는 걸 막고, 진도가 순서대로 나가요.")
+    else:
+        _ratio = int(float(_cfg.get("stageUnlockRatio", 0.7)) * 100)
+        st.caption("단원제를 끄면 전체 단어를 자유롭게 학습/퀴즈해요 (별 남용 방지 없음).")
+
     _all = st.checkbox("🎯 전체 다 풀기 (시험 대비 — 배운 단어를 한 판에 모두 출제)",
                        value=bool(_cfg.get("quizAll", 0)))
     if _all:
@@ -550,6 +562,8 @@ def page_admin(words):
             "starMinCorrect": int(_star),
             "quizQuestions": int(_qn),
             "quizAll": 1 if _all else 0,
+            "stageMode": 1 if _stage else 0,
+            "stageUnlockRatio": round(_ratio / 100, 2),
             "weakFirst": int(_weak),
             "speakRetries": int(_retry),
             "speakLeniency": int(_len),
