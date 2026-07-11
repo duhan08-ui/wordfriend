@@ -523,31 +523,26 @@ def page_admin(words):
             _cfg = _cjson.load(open("config.json", encoding="utf-8"))
         except Exception:
             pass
-    _stage = st.checkbox("📘 단원제 학습 (단원을 순서대로: 배우기 → 퀴즈로 마스터 → 다음 단원 해금)",
+    st.markdown("**학습 흐름 (새 단어 묶음제)**")
+    st.caption("새 단어 N개 배우기 → 그 N개 섞어서 퀴즈 → 다 맞으면 ⭐ 지급 · "
+               "틀리면 틀린 단어 배우고 다시 → 하루 상한까지")
+    bc1, bc2, bc3 = st.columns(3)
+    _batch = bc1.number_input("새 단어 묶음 크기 (= 퀴즈 문제 수)", 3, 50,
+                              int(_cfg.get("batchSize", 10)))
+    _bstar = bc2.number_input("묶음 만점 시 별 개수", 1, 20, int(_cfg.get("batchStar", 5)))
+    _cap = bc3.number_input("하루 별 상한 (0=무제한)", 0, 200, int(_cfg.get("dailyStarCap", 10)))
+    st.caption(f"예: 묶음 {int(_batch)}개 · 만점 ⭐{int(_bstar)}개 · 하루 상한 {int(_cap)}개 "
+               f"→ 하루 최대 {(_cap // _bstar) if _bstar else '∞'}묶음까지 별을 받아요 (그 뒤엔 공부만).")
+
+    _stage = st.checkbox("📘 단원제 (단원을 순서대로 · 한 단원 익히면 다음 단원 해금)",
                          value=bool(_cfg.get("stageMode", 1)))
     if _stage:
         _ratio = st.slider("다음 단원 열리는 기준 (현재 단원 마스터 비율)",
                            50, 100, int(float(_cfg.get("stageUnlockRatio", 0.7)) * 100), step=5,
                            format="%d%%")
-        st.caption("예: 70%면 현재 단원 단어의 70%를 '거의/다 외움'으로 만들면 다음 단원이 열려요. "
-                   "단원제를 켜면 배우기 없이 퀴즈만 도는 걸 막고, 진도가 순서대로 나가요.")
     else:
         _ratio = int(float(_cfg.get("stageUnlockRatio", 0.7)) * 100)
-        st.caption("단원제를 끄면 전체 단어를 자유롭게 학습/퀴즈해요 (별 남용 방지 없음).")
-
-    _all = st.checkbox("🎯 전체 다 풀기 (시험 대비 — 배운 단어를 한 판에 모두 출제)",
-                       value=bool(_cfg.get("quizAll", 0)))
-    if _all:
-        st.info("전체 다 풀기가 켜져 있어요. 한 판에 '배운 단어 전체'가 나옵니다. "
-                "평소 학습으로 돌아가려면 체크를 해제하세요.")
-    cc1, cc2, cc3 = st.columns(3)
-    _star = cc1.number_input("별 지급 최소 정답 수", 1, 500, int(_cfg.get("starMinCorrect", 6)))
-    _qn = cc2.number_input("퀴즈/철자 문제 수", 3, 500, int(_cfg.get("quizQuestions", 10)),
-                           disabled=_all,
-                           help="전체 다 풀기를 켜면 이 값은 무시되고 배운 단어 전체가 나와요")
-    _weak = cc3.number_input("약한 단어 우선 수", 0, 500, int(_cfg.get("weakFirst", 7)))
-    if _star > _qn and not _all:
-        st.warning(f"별 기준({_star})이 문제 수({_qn})보다 크면 별을 받을 수 없어요. 문제 수 이하로 맞춰주세요.")
+        st.caption("단원제를 끄면 배운 단어 전체에서 묶음이 나와요.")
     cc4, cc5, cc6 = st.columns(3)
     _retry = cc4.number_input("따라 말하기 재시도", 1, 9, int(_cfg.get("speakRetries", 3)))
     _slow = cc5.number_input("느린 발음 속도", 0.4, 1.0, float(_cfg.get("slowSpeed", 0.65)), step=0.05)
@@ -559,17 +554,17 @@ def page_admin(words):
                "적용 확인은 각 폰의 관리자 대시보드 상단에서.")
     if st.button("⚙️ 설정 저장 → 앱에 적용", use_container_width=True):
         body = _cjson.dumps({
-            "starMinCorrect": int(_star),
-            "quizQuestions": int(_qn),
-            "quizAll": 1 if _all else 0,
+            "batchSize": int(_batch),
+            "batchStar": int(_bstar),
+            "dailyStarCap": int(_cap),
             "stageMode": 1 if _stage else 0,
             "stageUnlockRatio": round(_ratio / 100, 2),
-            "weakFirst": int(_weak),
             "speakRetries": int(_retry),
             "speakLeniency": int(_len),
             "slowSpeed": round(float(_slow), 2),
             "ttsSlow": float(_cfg.get("ttsSlow", 0.45)),
             "ttsNormal": float(_cfg.get("ttsNormal", 0.8)),
+            "weakFirst": int(_cfg.get("weakFirst", 7)),
         }).encode("utf-8")
         try:
             commit_files({"config.json": body}, "config: 원격 설정 변경")
