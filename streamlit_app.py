@@ -526,13 +526,13 @@ def page_admin(words):
     st.markdown("**학습 흐름 (새 단어 묶음제)**")
     st.caption("새 단어 N개 배우기 → 그 N개 섞어서 퀴즈 → 다 맞으면 ⭐ 지급 · "
                "틀리면 틀린 단어 배우고 다시 → 하루 상한까지")
-    bc1, bc2, bc3 = st.columns(3)
+    bc1, bc2 = st.columns(2)
     _batch = bc1.number_input("새 단어 묶음 크기 (= 퀴즈 문제 수)", 3, 50,
                               int(_cfg.get("batchSize", 10)))
-    _bstar = bc2.number_input("묶음 만점 시 별 개수", 1, 20, int(_cfg.get("batchStar", 5)))
-    _cap = bc3.number_input("하루 별 상한 (0=무제한)", 0, 200, int(_cfg.get("dailyStarCap", 10)))
-    st.caption(f"예: 묶음 {int(_batch)}개 · 만점 ⭐{int(_bstar)}개 · 하루 상한 {int(_cap)}개 "
-               f"→ 하루 최대 {(_cap // _bstar) if _bstar else '∞'}묶음까지 별을 받아요 (그 뒤엔 공부만).")
+    _cap = bc2.number_input("하루 별 상한 (0=무제한)", 0, 200, int(_cfg.get("dailyStarCap", 10)))
+    _bstar = int(_cfg.get("batchStar", 5))  # (미사용 · 모드별 1개 고정)
+    st.caption("퀴즈는 5가지(듣기·영어·한글·섞어서·철자)이고 각 만점마다 ⭐1개 → 한 묶음에서 최대 ⭐5개. "
+               f"하루 상한 {int(_cap)}개면 하루 최대 {int(_cap)//5 if _cap else '∞'}묶음까지 별을 받아요 (그 뒤엔 공부만).")
 
     _stage = st.checkbox("📘 단원제 (단원을 순서대로 · 한 단원 익히면 다음 단원 해금)",
                          value=bool(_cfg.get("stageMode", 1)))
