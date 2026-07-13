@@ -366,21 +366,48 @@ def page_report(words):
         st.bar_chart(pd.DataFrame([dist]).T.rename(columns={0: "단어 수"}), height=200)
         st.caption("상자0~1 = 자주 나오게 되는 약한 단어 · 상자4 = 완전히 익힌 단어")
 
-    # 세션(시각별) — 시작~종료가 기록된 날만
+    # ===== 이번 주(월~일) 요약 =====
+    from datetime import datetime, timedelta, timezone
+    _kst = timezone(timedelta(hours=9))
+    _today = datetime.now(_kst).date()
+    _monday = _today - timedelta(days=(_today.weekday()))  # 월=0
+    _wk_play = _wk_star = _wk_days = _wk_r = _wk_w = 0
+    _wk_bar = []
+    _dow_names = ["월","화","수","목","금","토","일"]
+    for _i in range(7):
+        _d = _monday + timedelta(days=_i)
+        _key = _d.strftime("%Y-%m-%d")
+        _o = days.get(_key) or {}
+        _p = _o.get("playSec", 0); _r = _o.get("right", 0); _w = _o.get("wrong", 0)
+        if _p > 0 or _r > 0 or _w > 0: _wk_days += 1
+        _wk_play += _p; _wk_star += _o.get("stars", 0); _wk_r += _r; _wk_w += _w
+        _wk_bar.append({"요일": _dow_names[_i], "공부(분)": round(_p/60, 1)})
+    st.markdown("##### 📅 이번 주 요약 (월~일)")
+    _wc1, _wc2, _wc3, _wc4 = st.columns(4)
+    _wc1.metric("공부 시간", f"{_wk_play//60}분")
+    _wc2.metric("받은 별", f"⭐{_wk_star}")
+    _wc3.metric("학습한 날", f"{_wk_days}일")
+    _wc4.metric("정답/오답", f"{_wk_r}/{_wk_w}")
+    import pandas as _pd
+    st.bar_chart(_pd.DataFrame(_wk_bar).set_index("요일"), height=200)
+
+    # ===== 세션(시각별) — 머문/공부 둘 다 =====
     _sess_rows = []
     for k in sorted(days.keys(), reverse=True)[:7]:
         for s in (days[k].get("sessions") or []):
+            _elapsed = max(0, int((s.get("endMs", 0) - s.get("startMs", 0)) / 1000))
             _sess_rows.append({
                 "날짜": k[5:],
                 "시작": s.get("start", ""),
                 "종료": s.get("end", ""),
-                "학습(분)": round(s.get("playSec", 0) / 60, 1),
+                "머문(분)": round(_elapsed / 60, 1),
+                "공부(분)": round(s.get("playSec", 0) / 60, 1),
                 "⭕": s.get("right", 0),
                 "❌": s.get("wrong", 0),
                 "🎤": s.get("speak", 0),
             })
     if _sess_rows:
-        st.markdown("##### ⏰ 학습 시간대 (세션별)")
+        st.markdown("##### ⏰ 학습 시간대 (세션별 · 머문/공부)")
         st.dataframe(_sess_rows, use_container_width=True, hide_index=True)
 
     st.markdown("##### 📅 일자별 기록")
