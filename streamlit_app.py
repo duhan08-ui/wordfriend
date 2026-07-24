@@ -382,6 +382,16 @@ def page_report(words):
         if _p > 0 or _r > 0 or _w > 0: _wk_days += 1
         _wk_play += _p; _wk_star += _o.get("stars", 0); _wk_r += _r; _wk_w += _w
         _wk_bar.append({"요일": _dow_names[_i], "공부(분)": round(_p/60, 1)})
+    # 지금까지 모은 별 (전체 누적) — 앱 홈의 '이번 주 별'은 월요일에 0으로 리셋되므로 여기서만 볼 수 있음
+    _star_all = sum((_o or {}).get("stars", 0) for _o in days.values())
+    _star_today = (days.get(_today.isoformat()) or {}).get("stars", 0)
+
+    st.markdown("##### ⭐ 모은 별")
+    _sc1, _sc2, _sc3 = st.columns(3)
+    _sc1.metric("오늘", f"⭐{_star_today}")
+    _sc2.metric("이번 주 (월~일)", f"⭐{_wk_star}")
+    _sc3.metric("지금까지 모두", f"⭐{_star_all}")
+
     st.markdown("##### 📅 이번 주 요약 (월~일)")
     _wc1, _wc2, _wc3, _wc4 = st.columns(4)
     _wc1.metric("공부 시간", f"{_wk_play//60}분")
