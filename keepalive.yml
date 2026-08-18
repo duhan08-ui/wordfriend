@@ -1,0 +1,19 @@
+name: keep-streamlit-awake
+
+# 스트림릿 관리 페이지가 잠들지 않게 4시간마다 한 번씩 열어줌
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Streamlit app
+        run: |
+          code=$(curl -s -o /tmp/body.html -w "%{http_code}" -L -A "Mozilla/5.0 (wordfriend-keepalive)" --max-time 90 "https://word0518.streamlit.app/")
+          echo "HTTP $code"
+          if grep -qi "back up" /tmp/body.html; then
+            echo "::warning::앱이 잠들어 있음 - 브라우저에서 한 번 깨워주세요"
+          fi
