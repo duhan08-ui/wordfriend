@@ -12,8 +12,10 @@ jobs:
     steps:
       - name: Ping Streamlit app
         run: |
-          code=$(curl -s -o /tmp/body.html -w "%{http_code}" -L -A "Mozilla/5.0 (wordfriend-keepalive)" --max-time 90 "https://word0518.streamlit.app/")
-          echo "HTTP $code"
-          if grep -qi "back up" /tmp/body.html; then
+          code=$(curl -s -o /tmp/body.html -w "%{http_code}" -L --max-redirs 10 -c /tmp/ck.txt -b /tmp/ck.txt -A "Mozilla/5.0 (wordfriend-keepalive)" --max-time 90 "https://word0518.streamlit.app/" || echo 000)
+          echo "main HTTP $code"
+          hc=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://word0518.streamlit.app/_stcore/health" || echo 000)
+          echo "health HTTP $hc"
+          if grep -qi "back up" /tmp/body.html 2>/dev/null; then
             echo "::warning::앱이 잠들어 있음 - 브라우저에서 한 번 깨워주세요"
           fi
