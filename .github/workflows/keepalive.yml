@@ -1,21 +1,61 @@
 name: keep-streamlit-awake
 
-# 스트림릿 관리 페이지가 잠들지 않게 4시간마다 한 번씩 열어줌
 on:
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "17 */3 * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Ping Streamlit app
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
         run: |
-          code=$(curl -s -o /tmp/body.html -w "%{http_code}" -L --max-redirs 10 -c /tmp/ck.txt -b /tmp/ck.txt -A "Mozilla/5.0 (wordfriend-keepalive)" --max-time 90 "https://word0518.streamlit.app/" || echo 000)
-          echo "main HTTP $code"
-          hc=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "https://word0518.streamlit.app/_stcore/health" || echo 000)
-          echo "health HTTP $hc"
-          if grep -qi "back up" /tmp/body.html 2>/dev/null; then
-            echo "::warning::앱이 잠들어 있음 - 브라우저에서 한 번 깨워주세요"
-          fi
+          pip install --quiet playwright
+          playwright install chromium --with-deps
+
+      - name: Open app in a real browser
+        run: |
+          cat > keepalive.py << 'PYEOF'
+          from playwright.sync_api import sync_playwright
+
+          URL = "https://word0518.streamlit.app/"
+
+          with sync_playwright() as p:
+              browser = p.chromium.launch()
+              page = browser.new_page()
+              page.goto(URL, wait_until="domcontentloaded", timeout=90000)
+              print("제목:", page.title())
+
+              for sel in ["text=Yes, get this app back up",
+                          "text=get this app back up",
+                          "button:has-text('back up')"]:
+                  try:
+                      btn = page.locator(sel).first
+                      if btn.is_visible(timeout=4000):
+                          btn.click()
+                          print("깨우기 버튼 클릭함")
+                          page.wait_for_timeout(20000)
+                          break
+                  except Exception:
+                      pass
+
+              try:
+                  page.wait_for_selector("[data-testid='stAppViewContainer']", timeout=120000)
+                  print("앱 화면 확인됨")
+              except Exception:
+                  print("앱 화면 셀렉터 대기 실패 - 스냅샷으로 확인")
+
+              page.wait_for_timeout(45000)
+
+              body = page.inner_text("body")[:300]
+              print("본문 미리보기:", body.replace("\n", " ")[:200])
+              browser.close()
+              print("완료")
+          PYEOF
+          python keepalive.py
