@@ -272,14 +272,46 @@ def kst(iso: str) -> str:
         return iso[:16].replace("T", " ")
 
 
+# 리포트에서 골라 볼 기록 (읽기 전용). 이 목록은 초등판 관리 페이지에만 있음.
+# 중등판 관리 페이지(wordmid0518)는 자기 테이블(wf_stats_mid)만 읽으므로 초등 기록을 볼 수 없음.
+REPORT_SOURCES = {
+    "🧒 초등 (단어친구)": {"table": "wf_stats", "words_repo": None},
+    "🧑‍🎓 중등 (단어친구 중등)": {"table": "wf_stats_mid", "words_repo": "duhan08-ui/wordfriend-mid"},
+}
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_remote_words(repo: str):
+    """다른 저장소의 words.csv (많이 틀린 단어의 뜻 표시용). 실패하면 빈 목록"""
+    try:
+        r = requests.get(f"https://raw.githubusercontent.com/{repo}/main/words.csv", timeout=10)
+        r.raise_for_status()
+        out = []
+        for row in csv.reader(io.StringIO(r.content.decode("utf-8"))):
+            if not row or row[0].strip() in ("", "en"):
+                continue
+            row = [c.strip() for c in row] + ["", "", ""]
+            out.append({"en": row[0], "ko": row[1], "emoji": row[2], "group": row[3]})
+        return out
+    except Exception:
+        return []
+
+
 def page_report(words):
     st.subheader("📊 학습 리포트")
     if not check_admin():
         return
 
+    src_name = st.radio("누구 기록을 볼까요?", list(REPORT_SOURCES.keys()), horizontal=True)
+    src = REPORT_SOURCES[src_name]
+    if src["words_repo"]:
+        words = load_remote_words(src["words_repo"])
+        if not words:
+            st.caption("⚠ 중등 단어장을 못 불러와서 '많이 틀린 단어'의 뜻이 비어 보일 수 있어요")
+
     try:
         r = requests.get(
-            f"{SUPA_URL}/rest/v1/wf_stats?select=*&order=updated_at.desc",
+            f"{SUPA_URL}/rest/v1/{src['table']}?select=*&order=updated_at.desc",
             headers={"apikey": SUPA_KEY, "Authorization": f"Bearer {SUPA_KEY}"},
             timeout=10,
         )
